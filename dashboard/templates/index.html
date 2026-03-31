@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard – Complejo Deportivo Alcoy</title>
+
+  <!-- Bootstrap, Font Awesome y Chart.js -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Fuente Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ——— RESET Y BASE ——— */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      height: 100vh; width: 100vw;
+      overflow: hidden;
+      background: #f0f2f5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .slide {
+      display: none;
+      width: 100vw; height: calc(100vh - 50px); /* Space for footer */
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: calc(100vh - 50px); /* Space for footer */
+      object-fit: cover;
+    }
+
+    /* ——— NAVBAR COMPACTA ——— */
+    .navbar {
+      background: #fff !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-bottom: 3px solid #667eea;
+      padding: 0.5rem 0; height: 60px;
+      display: flex;
+      align-items: center;
+    }
+    .navbar .container-fluid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .navbar-brand {
+      font-size: 1.3rem; font-weight: 700; color: #1e3c72 !important;
+    }
+    #nav-clock {
+      font-size: 1.1rem; font-weight: 500; color: #2d3748 !important;
+    }
+
+    /* ——— LOGOS COLABORADORES (FOOTER) ——— */
+    .sponsors-container {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .sponsors-text {
+      font-size: 0.85rem;
+      color: #718096;
+      font-weight: 500;
+    }
+    .sponsors-logos {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 40px;
+      overflow: hidden;
+    }
+    .sponsor-logo {
+      height: 28px;
+      width: auto;
+      opacity: 1;
+      transition: opacity 0.3s ease;
+      filter: brightness(1);
+    }
+    .sponsor-logo:hover {
+      opacity: 1;
+      filter: brightness(1.1);
+    }
+    .sponsor-logo-alcoi {
+      height: 28px;
+    }
+    .sponsor-logo-global {
+      height: 28px;
+      transform: scale(1);
+    }
+
+    /* ——— CONTENEDOR PRINCIPAL TV ——— */
+    .data-slide-container {
+      height: calc(100vh - 110px);
+      padding: 0.8rem; overflow: hidden;
+      position: relative;
+    }
+   
+    /* ——— FOOTER CON LOGOS ——— */
+    .sponsors-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    /* ——— LAYOUT PRINCIPAL ——— */
+    .main-grid {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 0.8rem;
+    }
+    .left-top    { grid-column:1; grid-row:1; }
+    .left-bottom{ grid-column:1; grid-row:2; }
+    .right-column{
+      grid-column:2; grid-row:1/3;
+      display:flex; flex-direction:column; gap:0.8rem;
+    }
+
+    /* ——— CARDS OPTIMIZADAS PARA TV ——— */
+    .card {
+      background:#fff; border:1px solid #e2e8f0;
+      border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05);
+      display:flex; flex-direction:column; height:100%; overflow:hidden;
+    }
+    .card-header {
+      background:#f8f9fa; color:#1e3c72;
+      border-bottom:1px solid #e2e8f0;
+      padding:0.6rem 1rem; font-weight:600; flex-shrink:0;
+      border-radius:12px 12px 0 0 !important;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .card-header h6 {
+      margin:0; font-size:1rem; display:flex;
+      align-items:center; gap:0.5rem;
+    }
+    .card-body {
+      padding:1rem; flex-grow:1; display:flex;
+      flex-direction:column; overflow:hidden;
+    }
+
+    /* ——— TEXTO DE DATOS OPTIMIZADO ——— */
+    .data-label {
+      font-size:0.7rem; color:#718096; font-weight:500;
+      text-transform:uppercase; letter-spacing:0.5px;
+      margin-bottom:0.2rem; display:block;
+    }
+    .data-value {
+      font-size:1.4rem; font-weight:700;
+      color:#2d3748; margin:0; line-height:1.2;
+    }
+    .data-value.large  { font-size:2rem; }
+    .data-value.medium{ font-size:1.6rem; }
+    .data-value.small { font-size:1.2rem; }
+    .data-unit {
+      font-size:0.8rem; color:#a0aec0; font-weight:500;
+      margin-top:0.2rem; display:block;
+    }
+
+    /* ——— PROGRESO ——— */
+    .progress-container { margin-top:0.4rem; }
+    .progress {
+      height:8px; border-radius:4px;
+      background:#e2e8f0;
+    }
+    .progress-bar { transition:width 0.6s ease; }
+
+    /* ——— INDICADORES ——— */
+    .status-indicator {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      padding:0.3rem 0.6rem; border-radius:16px;
+      font-size:0.8rem; font-weight:600; margin-top:0.4rem;
+    }
+    .status-indicator.good    { background:rgba(72,187,120,0.1); color:#2f855a; }
+    .status-indicator.warning { background:rgba(237,137,54,0.1); color:#c05621; }
+    .status-indicator.danger  { background:rgba(245,101,101,0.1); color:#c53030; }
+
+    /* ——— LAYOUT ESPECÍFICO PARA CARDS DE LA DERECHA ——— */
+    .right-column .card { flex:1; min-height:0; }
+
+    .aforo-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:1rem; height:100%; align-items:center;
+    }
+    .co2-content {
+      display:flex; flex-direction:column;
+      justify-content:center; height:100%;
+    }
+    .co2-item {
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; height:100%;
+    }
+   
+    /* ——— SOLAR GRID CORREGIDO Y SIMÉTRICO ——— */
+    .solar-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 0.8rem;
+    }
+   
+    .solar-charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.8rem;
+      flex: 1;
+      min-height: 0;
+    }
+   
+    .solar-chart {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 0.5rem;
+      height: 100%;
+    }
+   
+    .solar-chart h6 {
+      font-size: 0.7rem;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: 0.5px;
+    }
+   
+    .solar-chart canvas {
+      flex: 1;
+      max-height: 100px !important;
+      width: 100% !important;
+    }
+   
+    .solar-ratio-section {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+      flex-shrink: 0;
+    }
+   
+    .solar-ratio-section .data-label {
+      margin-bottom: 0.1rem;
+    }
+   
+    .solar-ratio-section .data-value {
+      font-size: 1.1rem;
+      color: #059669;
+    }
+   
+    .air-grid {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      grid-template-rows:1fr 1fr; gap:0.8rem; height:100%;
+    }
+    .air-item {
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; height:100%;
+    }
+    .ambiente-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:1rem; height:100%;
+    }
+    .ambiente-item {
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; height:100%;
+    }
+    .pool-grid {
+      display:grid; grid-template-columns:1fr 1fr 1fr;
+      gap:0.8rem; text-align:center; align-items:start;
+    }
+    .pool-item .data-value { font-size:1.1rem; }
+
+    /* ——— RESPONSIVE PARA DIFERENTES RESOLUCIONES TV ——— */
+    @media (max-height:900px) {
+      .data-value{ font-size:1.2rem; }
+      .data-value.large{ font-size:1.8rem; }
+      .data-value.medium{ font-size:1.4rem; }
+      .card-header{ padding:0.5rem 0.8rem; }
+      .card-body{ padding:0.8rem; }
+      .solar-chart canvas { max-height: 80px !important; }
+    }
+    @media (max-height:768px) {
+      .data-value{ font-size:1rem; }
+      .data-value.large{ font-size:1.5rem; }
+      .data-value.medium{ font-size:1.2rem; }
+      .card-header h6{ font-size:0.9rem; }
+      .data-label{ font-size:0.65rem; }
+      .solar-chart canvas { max-height: 60px !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ——— NAVBAR ——— -->
+  <nav class="navbar">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0">
+        <i class="fas fa-tachometer-alt me-2"></i>Información Centro Deportivo Municipal Eduardo Latorre
+      </span>
+      <span id="nav-clock" class="navbar-text ms-auto">--:--:--</span>
+    </div>
+  </nav>
+
+  <!-- ——— SLIDES ——— -->
+  <div id="slides-container">
+    <div id="slide_data_panel" class="slide">
+      <div class="data-slide-container">
+        <div class="main-grid">
+
+          <!-- Aire -->
+          <div class="left-top">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-wind text-primary"></i>Calidad del Aire</h6>
+              </div>
+              <div class="card-body">
+                <div class="air-grid">
+                  <div class="air-item">
+                    <span class="data-label">NO₂</span>
+                    <p id="airNO2Value" class="data-value medium">–</p>
+                  </div>
+                  <div class="air-item">
+                    <span class="data-label">O₃</span>
+                    <p id="airO3Value" class="data-value medium">–</p>
+                  </div>
+                  <div class="air-item">
+                    <span class="data-label">SO₂</span>
+                    <p id="airSO2Value" class="data-value medium">–</p>
+                  </div>
+                  <div class="air-item">
+                    <span class="data-label">CO</span>
+                    <p id="airCOValue" class="data-value medium">–</p>
+                  </div>
+                  <div class="air-item">
+                    <span class="data-label">PM2.5</span>
+                    <p id="airPM25Value" class="data-value medium">–</p>
+                  </div>
+                  <div class="air-item">
+                    <span class="data-label">PM10</span>
+                    <p id="airPM10Value" class="data-value medium">–</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Solar - COMPLETAMENTE REDISEÑADO Y SIMÉTRICO -->
+          <div class="left-bottom">
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-solar-panel text-warning"></i>Energía Solar y Consumo</h6>
+              </div>
+              <div class="card-body">
+                <div class="solar-container">
+                 
+                  <!-- Grid de 3 gráficas simétricas -->
+                  <div class="solar-charts-grid">
+                    <div class="solar-chart">
+                      <h6>Generación vs Consumo</h6>
+                      <canvas id="chartSolar"></canvas>
+                    </div>
+                    <div class="solar-chart">
+                      <h6>Tendencia Diaria</h6>
+                      <canvas id="chartSolarTrend"></canvas>
+                    </div>
+                    <div class="solar-chart">
+                      <h6>Eficiencia %</h6>
+                      <canvas id="chartSolarEfficiency"></canvas>
+                    </div>
+                  </div>
+                 
+                  <!-- Sección del ratio -->
+                  <div class="solar-ratio-section">
+                    <span class="data-label">Ratio Generada/Consumida</span>
+                    <div class="data-value" id="solarRatioValue">–</div>
+                  </div>
+                 
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Derecho -->
+          <div class="right-column">
+            <!-- Aforo -->
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-users text-info"></i>Aforo en Tiempo Real</h6>
+              </div>
+              <div class="card-body">
+                <div class="aforo-grid">
+                  <div>
+                    <span class="data-label">Complejo</span>
+                    <p id="peopleTotalValue" class="data-value large">–</p>
+                    <div class="progress-container">
+                      <div class="progress">
+                        <div id="peopleTotalProgress" class="progress-bar bg-success" style="width:0%"></div>
+                      </div>
+                      <small class="text-muted" id="peopleTotalCapacity">Cap: –</small>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="data-label">Gimnasio</span>
+                    <p id="peopleGymValue" class="data-value large">–</p>
+                    <div class="progress-container">
+                      <div class="progress">
+                        <div id="peopleGymProgress" class="progress-bar bg-success" style="width:0%"></div>
+                      </div>
+                      <small class="text-muted" id="peopleGymCapacity">Cap: –</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CO₂ -->
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-smog text-secondary"></i>Niveles de CO₂ (ppm)</h6>
+              </div>
+              <div class="card-body">
+                <div class="co2-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                  <div class="co2-item">
+                    <span class="data-label">Interior</span>
+                    <p id="co2Value" class="data-value medium">–</p>
+                    <div id="co2Status" class="status-indicator good" style="font-size: 0.7rem;">
+                      <i class="fas fa-check-circle"></i><span>Excelente</span>
+                    </div>
+                  </div>
+                  <div class="co2-item">
+                    <span class="data-label">Exterior</span>
+                    <p id="co2ExteriorValue" class="data-value medium">–</p>
+                    <div id="co2ExteriorStatus" class="status-indicator good" style="font-size: 0.7rem;">
+                      <i class="fas fa-check-circle"></i><span>Normal</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ambiente -->
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-thermometer-half text-danger"></i>Condiciones Ambientales</h6>
+              </div>
+              <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; height: 100%;">
+                  <!-- Interior -->
+                  <div style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                    <h6 style="font-size: 0.7rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 0.8rem;">Interior</h6>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                      <div class="ambiente-item">
+                        <span class="data-label">Temperatura</span>
+                        <p id="tempValue" class="data-value medium">–</p>
+                      </div>
+                      <div class="ambiente-item">
+                        <span class="data-label">Humedad</span>
+                        <p id="humValue" class="data-value medium">–</p>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Exterior -->
+                  <div style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                    <h6 style="font-size: 0.7rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 0.8rem;">Exterior</h6>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
+                      <div class="ambiente-item">
+                        <span class="data-label">Temperatura</span>
+                        <p id="tempExteriorValue" class="data-value medium">–</p>
+                      </div>
+                      <div class="ambiente-item">
+                        <span class="data-label">Humedad</span>
+                        <p id="humExteriorValue" class="data-value medium">–</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Piscina -->
+            <div class="card">
+              <div class="card-header">
+                <h6><i class="fas fa-swimmer text-info"></i>Estado de la Piscina</h6>
+              </div>
+              <div class="card-body">
+                <div class="pool-grid">
+                  <div>
+                    <span class="data-label">pH</span>
+                    <p id="poolPhValue" class="data-value">–</p>
+                  </div>
+                  <div>
+                    <span class="data-label">Temp. Agua</span>
+                    <p id="poolTempValue" class="data-value">–</p>
+                  </div>
+                  <div>
+                    <span class="data-label">Cloro Libre</span>
+                    <p id="poolCloroLibreValue" class="data-value">–</p>
+                  </div>
+                  <div>
+                    <span class="data-label">Cloro Total</span>
+                    <p id="poolCloroTotalValue" class="data-value">–</p>
+                  </div>
+                  <div>
+                    <span class="data-label">Cloro Res.</span>
+                    <p id="poolCloroResidualValue" class="data-value">–</p>
+                  </div>
+                  <div>
+                    <span class="data-label">Turbidez</span>
+                    <p id="poolTurbidezValue" class="data-value">–</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Footer con logos colaboradores -->
+  <div class="sponsors-footer">
+    <div class="sponsors-container">
+      <span class="sponsors-text">Projecte desenvolupat dins del Sandbox Urbà Alcoi</span>
+      <div class="sponsors-logos">
+        <img src="/static/images/alcoi-sandbox.png" alt="Alcoi Sandbox Urbà" class="sponsor-logo sponsor-logo-alcoi">
+        <img src="/static/images/global-omnium.png" alt="Global Omnium" class="sponsor-logo sponsor-logo-global">
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript completo -->
+  <script>
+    class DashboardApp {
+      constructor() {
+        this.config = {
+          dataUpdateInterval: 5 * 60 * 1000,
+          maxRetries: 3, retryDelay: 2000,
+          capacities: { total_complejo: 200, sala_gimnasio: 50 },
+          thresholds: { co2: { good: 800, warning: 1000 }, ph: { low: 7.2, high: 7.6 } }
+        };
+        this.state = {
+          slides: [],
+          currentSlideIdx: 0,
+          currentTimeout: null,
+          charts: {},
+          isOnline: navigator.onLine
+        };
+        this.elements = {};
+        this.init();
+      }
+
+      async init() {
+        this.cacheElements();
+        window.addEventListener('online', () => this.handleConnectionChange(true));
+        window.addEventListener('offline', () => this.handleConnectionChange(false));
+        this.startClock();
+       
+        await this.loadConfiguration();
+        await this.updateData();
+        setInterval(() => this.updateData(), this.config.dataUpdateInterval);
+        console.log('✅ Dashboard inicializado correctamente');
+      }
+
+      cacheElements() {
+        ['nav-clock','peopleTotalValue','peopleGymValue',
+         'peopleTotalProgress','peopleGymProgress','peopleTotalCapacity','peopleGymCapacity',
+         'co2Value','co2Status','co2ExteriorValue','co2ExteriorStatus',
+         'tempValue','humValue','tempExteriorValue','humExteriorValue',
+         'poolPhValue','poolTempValue','poolCloroLibreValue','poolCloroTotalValue',
+         'poolCloroResidualValue','poolTurbidezValue',
+         'airNO2Value','airO3Value','airSO2Value','airCOValue','airPM25Value','airPM10Value',
+         'solarRatioValue']
+        .forEach(id => this.elements[id] = document.getElementById(id));
+      }
+
+      handleConnectionChange(online) {
+        this.state.isOnline = online;
+        console.log(online ? '✅ Conexión online' : '⚠️ Offline');
+      }
+
+      startClock() {
+        const el = this.elements['nav-clock'];
+        if (!el) return;
+        const upd = () => el.textContent = new Date().toLocaleString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});
+        upd(); setInterval(upd,1000);
+      }
+
+      async loadConfiguration() {
+        try {
+          console.log('📋 Cargando configuración...');
+          const response = await fetch('/config');
+          if (!response.ok) throw new Error('Error cargando config');
+         
+          const config = await response.json();
+          console.log('📋 Configuración recibida:', config);
+         
+          if (this.elements.peopleTotalCapacity) {
+            this.elements.peopleTotalCapacity.textContent = `Cap: ${this.config.capacities.total_complejo}`;
+          }
+          if (this.elements.peopleGymCapacity) {
+            this.elements.peopleGymCapacity.textContent = `Cap: ${this.config.capacities.sala_gimnasio}`;
+          }
+         
+          const enabledSlides = config.slides.filter(s => s.enabled);
+          console.log('📋 Slides habilitados:', enabledSlides);
+         
+          this.state.slides = [];
+         
+          for (const slide of enabledSlides) {
+            if (slide.type === 'video') {
+              this.createVideoSlide(slide);
+              this.state.slides.push({
+                id: `slide_video_${slide.id}`,
+                type: 'video',
+                filename: slide.filename
+              });
+            } else if (slide.type === 'data') {
+              this.state.slides.push({
+                id: 'slide_data_panel',
+                type: 'data',
+                duration: slide.duration || 30
+              });
+            }
+          }
+         
+          console.log('📋 Slides finales:', this.state.slides);
+         
+          if (this.state.slides.length > 0) {
+            this.showSlide(this.state.slides[0].id);
+            this.scheduleNextSlide();
+          } else {
+            console.log('📋 No hay slides, mostrando solo panel de datos');
+            this.showSlide('slide_data_panel');
+          }
+         
+        } catch (error) {
+          console.error('❌ Error cargando configuración:', error);
+          this.state.slides = [{ id: 'slide_data_panel', type: 'data', duration: 30 }];
+          this.showSlide('slide_data_panel');
+        }
+      }
+
+      createVideoSlide(slide) {
+        const slideId = `slide_video_${slide.id}`;
+       
+        if (document.getElementById(slideId)) {
+          console.log(`📺 Video slide ${slideId} ya existe`);
+          return;
+        }
+       
+        console.log(`📺 Creando video slide: ${slideId} con archivo ${slide.filename}`);
+       
+        const videoHTML = `
+          <div id="${slideId}" class="slide" style="display: none;">
+            <video muted playsinline preload="metadata" style="width: 100%; height: 100%; object-fit: cover;">
+              <source src="/static/videos/${slide.filename}" type="video/mp4">
+              Tu navegador no soporta el tag de video.
+            </video>
+          </div>`;
+       
+        const slidesContainer = document.getElementById('slides-container');
+        if (slidesContainer) {
+          slidesContainer.insertAdjacentHTML('beforeend', videoHTML);
+         
+          const video = document.querySelector(`#${slideId} video`);
+          if (video) {
+            video.onended = () => {
+              console.log(`🎬 Video ${slide.filename} terminado`);
+              this.nextSlide();
+            };
+           
+            video.onerror = (e) => {
+              console.warn(`⚠️ Error en video ${slide.filename}:`, e);
+              this.nextSlide();
+            };
+           
+            video.onloadstart = () => {
+              console.log(`📺 Iniciando carga de ${slide.filename}`);
+            };
+          }
+        }
+      }
+
+      showSlide(id) {
+        console.log(`📺 Mostrando slide: ${id}`);
+       
+        document.querySelectorAll('.slide').forEach(s => s.style.display = 'none');
+       
+        const s = document.getElementById(id);
+        if (!s) {
+          console.warn(`⚠️ Slide ${id} no encontrado`);
+          return;
+        }
+       
+        s.style.display = 'block';
+       
+        const video = s.querySelector('video');
+        if (video) {
+          video.currentTime = 0;
+          console.log(`🎬 Reproduciendo video en ${id}`);
+          video.play().catch(e => {
+            console.warn(`⚠️ No se pudo reproducir automáticamente:`, e.name);
+            setTimeout(() => this.nextSlide(), 2000);
+          });
+        }
+      }
+
+      scheduleNextSlide() {
+        if (this.state.currentTimeout) {
+          clearTimeout(this.state.currentTimeout);
+          this.state.currentTimeout = null;
+        }
+       
+        if (this.state.slides.length <= 1) {
+          console.log('📋 Solo un slide, no se programa rotación');
+          return;
+        }
+       
+        const current = this.state.slides[this.state.currentSlideIdx];
+       
+        if (current && current.type === 'data') {
+          const delay = (current.duration || 30) * 1000;
+          console.log(`⏰ Siguiente slide en ${delay/1000}s`);
+          this.state.currentTimeout = setTimeout(() => this.nextSlide(), delay);
+        }
+      }
+
+      nextSlide() {
+        if (this.state.slides.length <= 1) return;
+       
+        if (this.state.currentTimeout) {
+          clearTimeout(this.state.currentTimeout);
+          this.state.currentTimeout = null;
+        }
+       
+        this.state.currentSlideIdx = (this.state.currentSlideIdx + 1) % this.state.slides.length;
+        const next = this.state.slides[this.state.currentSlideIdx];
+       
+        console.log(`➡️ Siguiente slide: ${this.state.currentSlideIdx + 1}/${this.state.slides.length} - ${next.id}`);
+       
+        this.showSlide(next.id);
+        this.scheduleNextSlide();
+      }
+
+      async updateData() {
+        if (!this.state.isOnline) return;
+        try {
+          const res = await fetch('/data');
+          if (!res.ok) throw new Error(res.status);
+          const data = await res.json();
+          this.updateUI(data);
+        } catch(e) {
+          console.error('Error cargando /data', e);
+        }
+      }
+
+      updateUI(data) {
+        const { air={}, co2={}, thr={}, pool={}, people={}, solar={} } = data;
+        this.updateAirData(air);
+        this.updateSolarCharts(solar);
+        this.updatePeople(people);
+        this.updateCO2(co2);
+        this.updateAmbient(thr);
+        this.updatePool(pool);
+      }
+
+      updateElement(id, value, suffix = '') {
+        const el = this.elements[id];
+        if (el) el.textContent = value != null ? `${value}${suffix}` : '–';
+      }
+
+      updateAirData(data) {
+        this.updateElement('airNO2Value', data.no2);
+        this.updateElement('airO3Value', data.o3);
+        this.updateElement('airSO2Value', data.so2);
+        this.updateElement('airCOValue', data.co);
+        this.updateElement('airPM25Value', data.pm25);
+        this.updateElement('airPM10Value', data.pm10);
+      }
+
+      updateSolarCharts(data) {
+        const vals = [data.generated_kwh||0, data.consumed_kwh||0];
+        this.updateElement('solarRatioValue', data.import_export_ratio?.toFixed(2));
+       
+        // Gráfica 1: Generada vs Consumida
+        if (!this.state.charts.solar) {
+          const ctx = document.getElementById('chartSolar')?.getContext('2d');
+          if (ctx) {
+            this.state.charts.solar = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels:['Gen','Cons'],
+                datasets:[{
+                  data: vals,
+                  backgroundColor:['rgba(72,187,120,0.8)','rgba(245,101,101,0.8)'],
+                  borderRadius:4
+                }]
+              },
+              options: {
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins: { legend: { display: false } },
+                scales:{
+                  y:{
+                    beginAtZero:true,
+                    ticks: { font: { size: 9 } },
+                    grid: { display: false }
+                  },
+                  x: {
+                    ticks: { font: { size: 9 } },
+                    grid: { display: false }
+                  }
+                }
+              }
+            });
+          }
+        } else {
+          this.state.charts.solar.data.datasets[0].data = vals;
+          this.state.charts.solar.update('none');
+        }
+       
+        // Gráfica 2: Tendencia Diaria
+        if (!this.state.charts.solarTrend) {
+          const ctx2 = document.getElementById('chartSolarTrend')?.getContext('2d');
+          if (ctx2) {
+            this.state.charts.solarTrend = new Chart(ctx2, {
+              type: 'line',
+              data: {
+                labels: ['6h', '9h', '12h', '15h', '18h'],
+                datasets: [{
+                  data: [0, 1200, 3500, 2800, 500],
+                  borderColor: 'rgba(251, 191, 36, 1)',
+                  backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                  tension: 0.4,
+                  fill: true,
+                  pointRadius: 3
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: { font: { size: 9 } },
+                    grid: { color: 'rgba(0,0,0,0.1)' }
+                  },
+                  x: {
+                    ticks: { font: { size: 8 } },
+                    grid: { display: false }
+                  }
+                }
+              }
+            });
+          }
+        }
+       
+        // Gráfica 3: Eficiencia (Gauge)
+        if (!this.state.charts.solarEfficiency) {
+          const ctx3 = document.getElementById('chartSolarEfficiency')?.getContext('2d');
+          if (ctx3) {
+            const efficiency = data.import_export_ratio ? Math.min(data.import_export_ratio * 100, 100) : 75;
+            this.state.charts.solarEfficiency = new Chart(ctx3, {
+              type: 'doughnut',
+              data: {
+                datasets: [{
+                  data: [efficiency, 100 - efficiency],
+                  backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(229, 231, 235, 0.3)'],
+                  borderWidth: 0
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                circumference: 180,
+                rotation: 270,
+                cutout: '70%',
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { enabled: false }
+                }
+              },
+              plugins: [{
+                afterDraw: function(chart) {
+                  const ctx = chart.ctx;
+                  ctx.save();
+                  const centerX = chart.width / 2;
+                  const centerY = chart.height / 2 + 10;
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.font = 'bold 12px Inter';
+                  ctx.fillStyle = '#059669';
+                  ctx.fillText(efficiency.toFixed(0) + '%', centerX, centerY);
+                  ctx.restore();
+                }
+              }]
+            });
+          }
+        } else {
+          const efficiency = data.import_export_ratio ? Math.min(data.import_export_ratio * 100, 100) : 75;
+          this.state.charts.solarEfficiency.data.datasets[0].data = [efficiency, 100 - efficiency];
+          this.state.charts.solarEfficiency.update('none');
+        }
+      }
+
+      updatePeople(p) {
+        this.updateElement('peopleTotalValue', p.total_complejo);
+        this.updateElement('peopleGymValue', p.sala_gimnasio);
+        this.setProg('peopleTotalProgress', p.total_complejo, this.config.capacities.total_complejo);
+        this.setProg('peopleGymProgress', p.sala_gimnasio, this.config.capacities.sala_gimnasio);
+      }
+
+      setProg(id, val, max) {
+        const el = this.elements[id];
+        if (!el || val == null) return;
+        const pct = Math.min(val / max * 100, 100);
+        el.style.width = `${pct}%`;
+        el.className = 'progress-bar ' + (pct < 70 ? 'bg-success' : pct < 90 ? 'bg-warning' : 'bg-danger');
+      }
+
+      updateCO2(c) {
+        this.updateElement('co2Value', c.co2);
+        const el = this.elements.co2Status;
+        if (el && c.co2 != null) {
+          let cls = 'good', txt = 'Excelente', ic = 'fa-check-circle';
+          if (c.co2 > this.config.thresholds.co2.warning) {
+            cls = 'warning'; txt = 'Elevado'; ic = 'fa-exclamation-triangle';
+          }
+          if (c.co2 > this.config.thresholds.co2.good * 1.5) {
+            cls = 'danger'; txt = 'Alto'; ic = 'fa-times-circle';
+          }
+          el.className = `status-indicator ${cls}`;
+          el.innerHTML = `<i class="fas ${ic}"></i><span>${txt}</span>`;
+        }
+       
+        this.updateElement('co2ExteriorValue', c.co2_exterior || 420);
+        const elExt = this.elements.co2ExteriorStatus;
+        if (elExt) {
+          const co2Ext = c.co2_exterior || 420;
+          let cls = 'good', txt = 'Normal', ic = 'fa-check-circle';
+          if (co2Ext > 450) {
+            cls = 'warning'; txt = 'Elevado'; ic = 'fa-exclamation-triangle';
+          }
+          if (co2Ext > 500) {
+            cls = 'danger'; txt = 'Alto'; ic = 'fa-times-circle';
+          }
+          elExt.className = `status-indicator ${cls}`;
+          elExt.innerHTML = `<i class="fas ${ic}"></i><span>${txt}</span>`;
+        }
+      }
+
+      updateAmbient(t) {
+        this.updateElement('tempValue', t.temperature?.toFixed(1), '°C');
+        this.updateElement('humValue', t.humidity ? (t.humidity * 100).toFixed(0) : null, '%');
+       
+        if (t.temperature_exterior !== undefined) {
+          this.updateElement('tempExteriorValue', t.temperature_exterior.toFixed(1), '°C');
+        } else {
+          this.updateElement('tempExteriorValue', '22.5', '°C');
+        }
+       
+        if (t.humidity_exterior !== undefined) {
+          this.updateElement('humExteriorValue', (t.humidity_exterior * 100).toFixed(0), '%');
+        } else {
+          this.updateElement('humExteriorValue', '65', '%');
+        }
+      }
+
+      updatePool(p) {
+        this.updateElement('poolPhValue', p.ph?.toFixed(2));
+        this.updateElement('poolTempValue', p.temperatura_agua?.toFixed(1), '°C');
+        this.updateElement('poolCloroLibreValue', p.cloro_libre?.toFixed(2));
+        this.updateElement('poolCloroTotalValue', p.cloro_total?.toFixed(2));
+        this.updateElement('poolTurbidezValue', p.turbidez_ntu?.toFixed(2));
+       
+        if (p.cloro_total && p.cloro_libre) {
+          const residual = p.cloro_total - p.cloro_libre;
+          this.updateElement('poolCloroResidualValue', residual.toFixed(2));
+        }
+      }
+    }
+
+    window.addEventListener('load', () => {
+      window.dashboardApp = new DashboardApp();
+    });
+  </script>
+</body>
+</html>

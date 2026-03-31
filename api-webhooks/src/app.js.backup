@@ -1,0 +1,96 @@
+import express from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+import { config } from "./config.js";
+import { ingestSchema } from "./schema.js";
+
+const app = express();
+
+app.use(helmet());
+app.use(express.json({ limit: "1mb" }));
+app.use(morgan("combined"));
+
+// --- VARIABLE EN MEMORIA (Estado de la Piscina) ---
+// Valores por defecto para que el dashboard no salga vacío al inicio
+let datosPiscina = {
+  ph: 7.2,
+  cloro_libre: 1.0,
+  cloro_total: 1.5,
+  turbidez: 0.1,
+  temp: 26.0,
+  ultimo_dato: null, // Para saber cuándo llegó la info real
+  serial_device: null // Para saber qué sensor mandó el dato
+};
+
+// --- RUTA DE HEALTHCHECK (PÚBLICA) ---
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+// --- MIDDLEWARE DE SEGURIDAD (API KEY) ---
+// AHORA PROTEGEMOS TODO, INCLUIDO EL WEBHOOK DE GLOBAL OMNIUM
+app.use((req, res, next) => {
+  const key = req.header("x-api-key");
+  // Aceptamos la key si coincide con la config
+  if (!key || key !== config.apiKey) {
+    return res.status(401).json({ error: "No autorizado (API Key inválida)" });
+  }
+  next();
+});
+
+// --- RUTAS PROTEGIDAS ---
+
+// 1. ENDPOINT DE RECEPCIÓN (Webhook Global Omnium)
+// Estructura esperada: { deviceType, serialNumber, payload: [{...}, {...}] }
+app.post("/webhooks/piscina", (req, res) => {
+  const body = req.body;
+
+  // Validación básica del formato Global Omnium
+  if (!body.payload || !Array.isArray(body.payload) || body.payload.length === 0) {
+    console.error("❌ Formato incorrecto recibido:", JSON.stringify(body));
+    return res.status(400).json({ error: "Formato JSON inválido. Se espera array 'payload'." });
+  }
+
+  // Tomamos la ÚLTIMA medida del array (la más reciente)
+  const ultimaMedida = body.payload[body.payload.length - 1];
+
+  // Actualizamos la memoria
+  // Mapeamos los campos que envían a nuestro dashboard.
+  // Nota: Usamos '||' para mantener el valor anterior si en este paquete no viene ese dato específico.
+  datosPiscina.serial_device = body.serialNumber;
+  datosPiscina.ultimo_dato = ultimaMedida.timestamp;
+  
+  // Mapeo flexible (Si envían temperatura, actualizamos. Si no, mantenemos).
+  if (ultimaMedida.temperature !== undefined) datosPiscina.temp = ultimaMedida.temperature;
+  if (ultimaMedida.ph !== undefined) datosPiscina.ph = ultimaMedida.ph;
+  if (ultimaMedida.chlorine !== undefined) datosPiscina.cloro_libre = ultimaMedida.chlorine; // Asumiendo key 'chlorine'
+  
+  // Log para depuración en servidor
+  console.log(`✅ Datos actualizados de ${body.deviceType} (${body.serialNumber})`);
+  console.log(`📊 Temp: ${datosPiscina.temp}, Fecha: ${datosPiscina.ultimo_dato}`);
+
+  return res.status(200).json({ status: "ok", message: "Datos procesados correctamente" });
+});
+
+// 2. ENDPOINT DE LECTURA (Para tu Dashboard Local)
+app.get("/piscina", (_req, res) => {
+  res.json(datosPiscina);
+});
+
+// 3. RUTA ORIGINAL DE SENSORES (La mantenemos por compatibilidad)
+app.post("/sensors/data", (req, res) => {
+  const parsed = ingestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Payload inválido", details: parsed.error.flatten() });
+  }
+  console.log(`Datos recibidos de: ${parsed.data.serialNumber}`);
+  return res.json({ status: "ok", received: parsed.data.payload.length });
+});
+
+// Manejo de errores
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: "Error interno del servidor" });
+});
+
+app.listen(config.port, () => {
+  console.log(`API Segura escuchando en http://0.0.0.0:${config.port}`);
+});

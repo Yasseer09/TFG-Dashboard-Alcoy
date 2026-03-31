@@ -1,0 +1,24 @@
+{
+  "slides": [
+    {
+      "id": 1,
+      "type": "video",
+      "filename": "video.mp4",
+      "enabled": true,
+      "duration": null
+    },
+    {
+      "id": 2,
+      "type": "data",
+      "enabled": true,
+      "duration": 30
+    },
+    {
+      "id": 3,
+      "type": "video",
+      "filename": "videoplayback.mp4",
+      "enabled": false,
+      "duration": null
+    }
+  ]
+}
